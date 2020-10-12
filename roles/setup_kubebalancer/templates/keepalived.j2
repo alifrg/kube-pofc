@@ -1,0 +1,19 @@
+# {{ ansible_managed }}
+vrrp_instance VI_1 {
+    state {{ keepalived_role }}
+    interface {{ interface_name }}
+    virtual_router_id {{ keepalived_router_id }}
+    {% if keepalived_role.lower() == "master" %}
+    priority {{ keepalived_priority }}
+    {% else %}
+    priority {{ keepalived_backup_priority }}
+    {% endif %}
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass {{ keepalived_auth_pass }}
+    }
+    virtual_ipaddress {
+        {{ keepalived_shared_ip }} dev {{ interface_name }} label {{ interface_name }}:0
+    }
+}

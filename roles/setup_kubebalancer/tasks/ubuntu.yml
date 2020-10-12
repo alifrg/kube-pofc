@@ -1,0 +1,72 @@
+- name: parse interfaces
+  set_fact:
+    interface_name="{{ item }}"
+  when: hostvars[inventory_hostname]['ansible_{{item}}']['ipv4']['address'] is search( base_ip )
+  with_items:
+    - "{{ ansible_interfaces }}"
+
+# - name: print interface
+#   debug:
+#     var: interface_name
+
+- name: Change dns
+  template:
+    src: resolv.conf.j2
+    dest: /etc/resolv.conf
+    mode: '0644'
+    owner: root
+    group: root
+    backup: yes
+
+- name: Install dependencies
+  apt:
+    name: "apt-transport-https,ca-certificates,curl,gnupg-agent,software-properties-common"
+    state: latest
+    update_cache: yes
+
+- name: Install dnsmasq,haproxy,keepalived
+  apt:
+    name: "dnsmasq,haproxy,keepalived"
+    state: latest
+    update_cache: yes
+
+- name: stop systemd-resolved
+  systemd:
+    state: stopped
+    daemon_reload: yes
+    enabled: no
+    name: "systemd-resolved"
+
+- name: config haproxy
+  template:
+    src: haproxy.j2
+    dest: "/etc/haproxy/haproxy.cfg"
+    mode: '0644'
+    owner: root
+    group: root
+    backup: yes
+
+- name: replace hosts file
+  template:
+    dest: /etc/hosts
+    src: hosts.j2
+  ignore_errors: yes
+
+- name: copy keepalived config
+  template:
+    src: keepalived.j2
+    dest: /etc/keepalived/keepalived.conf
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: Start dnsmasq,haproxy,keepalived
+  with_items:
+    - haproxy
+    - dnsmasq
+    - keepalived
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    enabled: yes
+    name: "{{item}}"

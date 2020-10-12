@@ -1,0 +1,33 @@
+- name: add kubernetes repo
+  copy:
+    src: kubernetes.repo
+    dest: "/etc/yum.repos.d/kubernetes.repo"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: tmp selinux off
+  shell: setenforce 0
+
+- name: tmp selinux off
+  shell: sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config 
+
+- name: Install Kubeadm,Kubelet,Kubectl
+  yum:
+    name: "kubelet,kubeadm,kubectl"
+    state: latest
+    update_cache: yes
+
+- sysctl:
+    name: net.bridge.bridge-nf-call-iptables
+    value: 1
+    state: present
+
+- sysctl:
+    name: net.bridge.bridge-nf-call-ip6tables 
+    value: 1
+    state: present
+
+- name: Get kubeadm images
+  shell: kubeadm config images pull
+

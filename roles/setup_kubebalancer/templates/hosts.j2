@@ -1,0 +1,11 @@
+127.0.0.1       localhost {{ ansible_hostname }} localunixsocket
+
+# The following lines are desirable for IPv6 capable hosts
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+
+{% for item in hostnames %}
+{{ item.ip }} {{ item.url }} {{ item.url.split('.')[0] }}{% if 'instance_number' in item %}{% for index in range(1, item.instance_number) %} {{item.url.split('.')[0]}}_{{ index }}{% endfor %}{% endif %}
+
+{% endfor %}

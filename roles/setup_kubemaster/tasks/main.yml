@@ -1,0 +1,68 @@
+- name: parse interfaces
+  set_fact:
+    node_ip={{ item }}
+  when: item.startswith(base_ip)
+  with_items:
+    - "{{ ansible_all_ipv4_addresses }}"
+
+- name: Change dns
+  template:
+    src: resolv.conf.j2
+    dest: /etc/resolv.conf
+    mode: '0644'
+    owner: root
+    group: root
+    backup: yes
+  tags: ["init"]
+
+# - name: check current masters
+#   shell: kubectl get nodes | wc -l
+#   tags: ["init"]
+#   when: INIT_NODE == "true"
+#   register: current_masters
+#   ignore_errors: yes
+
+- name: kubeadm init
+  shell: 'kubeadm init --apiserver-advertise-address="{{ master1_ip }}" --apiserver-cert-extra-sans="{{ master1_ip }}" --control-plane-endpoint "{{ LOAD_BALANCER_DNS }}:{{ LOAD_BALANCER_PORT }}" --upload-certs > kubeadm.output'
+  register: kubeadm
+  until: kubeadm is succeeded or "field is immutable" in kubeadm.stderr
+  when: INIT_NODE == "true"
+  tags: ["init"]
+
+- name: create join command
+  shell: cat kubeadm.output | tail -n 15 | head -n 6 | tail -n 3
+  register: kubeadm_join
+  tags: ["init"]
+  when: INIT_NODE == "true"
+
+- name: create worker join command
+  shell: cat kubeadm.output | tail -n 5 | head -n 6 | tail -n 3
+  register: kubeadm_worker_join
+  tags: ["init"]
+  when: INIT_NODE == "true"
+
+- name: join to cluster
+  shell: "{{ hostvars['master1'].kubeadm_join.stdout }} \ --apiserver-advertise-address={{ node_ip }}"
+  tags: ["init"]
+  when: INIT_NODE == "false"
+
+- name: setup kubectl
+  shell: "mkdir -p $HOME/.kube && cp -f /etc/kubernetes/admin.conf $HOME/.kube/config && chown $(id -u):$(id -g) $HOME/.kube/config"
+  tags: ["init"]
+
+- name: Install network plugin
+  shell: kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+  # shell: |
+  #   kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
+  #   kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
+  tags: ["init"]
+  when: INIT_NODE == "true"
+
+- name: Copy worker join command for local file
+  become: false
+  local_action: copy content="{{ hostvars['master1'].kubeadm_worker_join.stdout }}" dest="./worker-join-command"
+
+# - name: Untaint masters
+#   shell: kubectl taint nodes --all node-role.kubernetes.io/master-
+#   tags: ["init"]
+#   when: INIT_NODE == "true"

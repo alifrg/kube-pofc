@@ -1,0 +1,58 @@
+- name: parse interfaces
+  set_fact:
+    node_ip={{ item }}
+  when: item.startswith(base_ip)
+  with_items:
+    - "{{ ansible_all_ipv4_addresses }}"
+
+- name: Change dns
+  template:
+    src: resolv.conf.j2
+    dest: /etc/resolv.conf
+    mode: '0644'
+    owner: root
+    group: root
+    backup: yes
+
+- name: Install dependencies
+  apt:
+    name: "apt-transport-https,ca-certificates,curl,gnupg-agent,software-properties-common"
+    state: latest
+    update_cache: yes
+
+- name: Add kubeadm gpg key
+  apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+
+- name: Add kubernetes repo
+  apt_repository:
+    repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
+    update_cache: yes
+
+- name: Install Kubeadm,Kubelet,Kubectl
+  apt:
+    name: "kubelet,kubeadm,kubectl"
+    state: latest
+    update_cache: yes
+
+- name: Get kubeadm images
+  shell: kubeadm config images pull
+
+- name: Change NodeIP
+  with_items:
+    - kubelet.service.d
+  template:
+    src: override.conf.j2
+    dest: "/etc/systemd/system/{{item}}/override.conf"
+    mode: '0644'
+    owner: root
+    group: root
+    backup: yes
+
+# - name: reload kubelet
+#   with_items:
+#     - kubelet
+#   systemd:
+#     state: reloaded
+#     name: kubelet

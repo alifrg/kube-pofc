@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "kube-pofc.fullname" . }}-test-connection"
+  labels:
+    {{- include "kube-pofc.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "kube-pofc.fullname" . }}:{{ .Values.service.port }}']
+  restartPolicy: Never

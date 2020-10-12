@@ -1,0 +1,57 @@
+- name: Change dns
+  template:
+    src: resolv.conf.j2
+    dest: /etc/resolv.conf
+    mode: '0644'
+    owner: root
+    group: root
+    backup: yes
+
+- name: tmp selinux off
+  shell: setenforce 0
+
+- name: tmp selinux off
+  shell: sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+
+- name: Install dnsmasq,haproxy,keepalived 
+  yum:
+    name: "dnsmasq,haproxy,keepalived"
+    state: latest
+    update_cache: yes
+
+- name: config haproxy
+  template:
+    src: haproxy.j2
+    dest: "/etc/haproxy/haproxy.cfg"
+    mode: '0644'
+    owner: root
+    group: root
+    backup: yes
+
+- name: replace hosts file
+  template:
+    dest: /etc/hosts
+    src: hosts.j2
+  ignore_errors: yes
+
+- name: copy keepalived config
+  template:
+    src: keepalived.j2
+    dest: /etc/keepalived/keepalived.conf
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: create haproxy socket directory
+  shell: mkdir -p /run/haproxy/
+
+- name: Start dnsmasq,haproxy,keepalived
+  with_items:
+    - haproxy
+    - dnsmasq
+    - keepalived 
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    enabled: yes
+    name: "{{item}}"

@@ -1,0 +1,18 @@
+- name: parse interfaces
+  set_fact:
+    node_ip={{ item }}
+  when: item.startswith(base_ip)
+  with_items:
+    - "{{ ansible_all_ipv4_addresses }}"
+
+- name: Change dns
+  template:
+    src: ./worker-join-command
+    dest: /opt/worker-join-command
+    mode: '0755'
+    owner: root
+    group: root
+    backup: yes
+
+- name: join to cluster
+  shell: "cat /opt/worker-join-command | bash -"

@@ -1,0 +1,7 @@
+- name: include ubuntu tasks
+  include: ubuntu.yml
+  when: ansible_distribution == 'Ubuntu'
+
+- name: include centos tasks
+  include: centos.yml
+  when: ansible_distribution == 'CentOS'

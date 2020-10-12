@@ -1,0 +1,65 @@
+- name: Change dns
+  template:
+    src: resolv.conf.j2
+    dest: /etc/resolv.conf
+    mode: '0644'
+    owner: root
+    group: root
+    backup: yes
+
+- name: Install dependencies 
+  shell: yum install -y yum-utils device-mapper-persistent-data lvm2 
+
+- name: Add repo
+  shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo 
+
+- name: Install docker 
+  shell: yum install -y docker-ce docker-ce-cli containerd.io 
+
+- name: create docker unit dir
+  with_items:
+    - docker.service.d
+    - containerd.service.d
+  file:
+    path: "/etc/systemd/system/{{item}}/"
+    state: directory
+
+- name: Tune Docker
+  with_items:
+    - docker.service.d
+    - containerd.service.d
+  template:
+    src: override.conf.j2
+    dest: "/etc/systemd/system/{{item}}/override.conf"
+    mode: '0644'
+    owner: root
+    group: root
+    backup: yes
+
+
+- name: Start Docker
+  with_items:
+    - containerd
+    - docker
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    enabled: yes
+    name: "{{item}}"
+
+- name: Install docker compose
+  get_url:
+    url: https://github.com/docker/compose/releases/download/1.25.0/docker-compose-Linux-x86_64 
+    dest: /usr/local/bin/docker-compose
+    mode: 0755
+
+- name: Link docker-compose 
+  shell: "ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose"
+
+- name: firewalld config docker0
+  shell:  firewall-cmd --permanent --zone=trusted --add-interface=docker0
+  when: firewalld_enabled == 'TRUE'
+
+- name: firewalld config docker0
+  shell:  firewall-cmd --reload
+  when: firewalld_enabled == 'TRUE'

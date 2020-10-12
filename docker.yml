@@ -1,0 +1,6 @@
+- hosts: docker_nodes
+  remote_user: root
+  vars:
+    - firewalld_enabled: "FALSE"
+  roles: 
+    - setup_docker

@@ -1,0 +1,27 @@
+# host_os: ubuntu
+
+# ns1_ip: "1.1.1.1"
+# ns2_ip: "4.2.2.4"
+
+# FOR IRAN USE BELOW IPS
+# ns1_ip: "185.51.200.2"
+# ns2_ip: "178.22.122.100"
+
+# LOAD_BALANCER_DNS: "controller.kube.box"
+# LOAD_BALANCER_PORT: "6443"
+
+# CONTROLLER_1: "10.10.0.41"
+# CONTROLLER_2: "10.10.0.40"
+# CONTROLLER_3: "10.10.0.36"
+
+
+
+# keepalived_auth_pass: "5dcc24e828a39963fac4208f"
+# keepalived_role: "MASTER"
+# keepalived_router_id: "52"
+# keepalived_shared_iface: "ens3"
+# keepalived_shared_ip: "10.10.0.70"
+# keepalived_check_process: "keepalived"
+# keepalived_priority: "100"
+# keepalived_backup_priority: "50"
+

@@ -1,0 +1,30 @@
+- hosts: kubebalancer_nodes
+  remote_user: root
+  vars:
+    - environment_name: production
+    - hostnames:
+        - { ip: "192.168.30.21", url: "controller1.kube.tnt" }
+        - { ip: "192.168.30.22", url: "controller2.kube.tnt" }
+        - { ip: "192.168.30.23", url: "controller3.kube.tnt" }
+        - { ip: "192.168.30.13", url: "controller.kube.tnt" }
+  roles:
+    - setup_kubebalancer
+
+
+- hosts: kubemaster_nodes
+  remote_user: root
+  roles:
+    - setup_docker
+    - setup_kubeadm
+    - setup_kubemaster
+  vars:
+    HOST_COUNT: "{{ groups['maingroup'] | length }}"
+
+- hosts: kubeworker_nodes
+  remote_user: root
+  roles:
+    - setup_docker
+    - setup_kubeadm
+    - setup_kubeworker
+  vars:
+    HOST_COUNT: "{{ groups['maingroup'] | length }}"

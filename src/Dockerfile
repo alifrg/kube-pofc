@@ -1,4 +1,7 @@
 FROM golang:1.14.2-stretch AS builder
+
+LABEL maintainer="ali.fareghbal@gmail.com"
+
 WORKDIR /go/src/kube-pofc 
 
 # Install git for `go get`
